@@ -4,66 +4,79 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Task } from '../../../types';
+import Header from '../../../components/Header/Header';
+import { Card, CardContent } from '../../../components/UI/Card';
+import Button from '../../../components/UI/Button';
+import LoadingSpinner from '../../../components/UI/LoadingSpinner';
+import { useSession } from '../../../lib/auth';
+import { todoApi } from '../../../lib/todo-api';
 
-const TaskDetailPage = () => {
+const TaskDetailPageContent = () => {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { data: session, isPending: isLoading } = useSession();
   const [task, setTask] = useState<Task | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Fetch task details
   useEffect(() => {
+    if (!session?.user && !isLoading) {
+      // Redirect to login if not authenticated
+      router.push('/login');
+      return;
+    }
+
     const fetchTask = async () => {
       try {
-        // In a real implementation, this would call the API to get the task
-        // For demo purposes, we'll simulate the data
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Mock task data
-        const mockTask: Task = {
-          id: id,
-          title: 'Sample Task',
-          description: 'This is a sample task description',
-          completed: false,
-          userId: 'user123',
-          createdAt: new Date(),
-          updatedAt: new Date()
-        };
-        
-        setTask(mockTask);
-        setTitle(mockTask.title);
-        setDescription(mockTask.description || '');
-      } catch (err) {
-        setError('Failed to load task');
+        const fetchedTask = await todoApi.getTaskById(id);
+        setTask(fetchedTask);
+        setTitle(fetchedTask.title);
+        setDescription(fetchedTask.description || '');
+
+        // Convert integer priority to string for UI
+        let priorityStr: 'low' | 'medium' | 'high' = 'medium';
+        if (fetchedTask.priority !== undefined) {
+          if (typeof fetchedTask.priority === 'number') {
+            priorityStr = fetchedTask.priority === 0 ? 'low' :
+                         fetchedTask.priority === 2 ? 'high' : 'medium';
+          } else {
+            priorityStr = fetchedTask.priority as 'low' | 'medium' | 'high';
+          }
+        }
+        setPriority(priorityStr);
+      } catch (err: any) {
+        setError(err.message || 'Failed to load task');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchTask();
-  }, [id]);
+    if (session?.user) {
+      fetchTask();
+    }
+  }, [id, session, isLoading, router]);
 
   const handleSave = async () => {
+    if (!task) return;
+
     try {
-      // In a real implementation, this would call the API to update the task
-      // For demo purposes, we'll simulate the update
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Mock update
-      const updatedTask: Task = {
-        ...task!,
+      // Map priority string to integer for API
+      const priorityValue = priority === 'low' ? 0 : priority === 'high' ? 2 : 1;
+
+      const updatedTask = await todoApi.updateTask(task.id, {
         title,
         description,
-        updatedAt: new Date()
-      };
-      
+        completed: task.completed,
+        priority: priorityValue
+      });
+
       setTask(updatedTask);
       alert('Task updated successfully!');
-    } catch (err) {
-      setError('Failed to update task');
+    } catch (err: any) {
+      setError(err.message || 'Failed to update task');
     }
   };
 
@@ -71,49 +84,48 @@ const TaskDetailPage = () => {
     if (!window.confirm('Are you sure you want to delete this task?')) {
       return;
     }
-    
+
+    if (!task) return;
+
     try {
-      // In a real implementation, this would call the API to delete the task
-      // For demo purposes, we'll simulate the deletion
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Redirect to dashboard after deletion
+      await todoApi.deleteTask(task.id);
       router.push('/');
-    } catch (err) {
-      setError('Failed to delete task');
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete task');
     }
   };
 
   const toggleCompletion = async () => {
+    if (!task) return;
+
     try {
-      // In a real implementation, this would call the API to toggle completion
-      // For demo purposes, we'll simulate the toggle
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      const updatedTask = {
-        ...task!,
-        completed: !task!.completed,
-        updatedAt: new Date()
-      };
-      
+      // Map priority string to integer for API
+      const priorityValue = priority === 'low' ? 0 : priority === 'high' ? 2 : 1;
+
+      const updatedTask = await todoApi.updateTask(task.id, {
+        ...task,
+        completed: !task.completed,
+        priority: priorityValue
+      });
+
       setTask(updatedTask);
-    } catch (err) {
-      setError('Failed to update task status');
+    } catch (err: any) {
+      setError(err.message || 'Failed to update task status');
     }
   };
 
-  if (loading) {
+  if (isLoading || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-blue-500"></div>
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-green-50 flex items-center justify-center">
+        <LoadingSpinner />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-green-50 flex items-center justify-center">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg" role="alert">
           <span className="block sm:inline">{error}</span>
         </div>
       </div>
@@ -122,10 +134,10 @@ const TaskDetailPage = () => {
 
   if (!task) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-green-50 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-xl">Task not found</p>
-          <Link href="/" className="text-blue-600 hover:underline mt-4 inline-block">
+          <p className="text-2xl font-semibold text-gray-700">Task not found</p>
+          <Link href="/" className="text-emerald-600 hover:underline mt-4 inline-block">
             Back to Dashboard
           </Link>
         </div>
@@ -134,23 +146,25 @@ const TaskDetailPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-          <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg leading-6 font-medium text-gray-900">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-green-50">
+      <Header />
+      <main className="max-w-3xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        <Card className="border border-emerald-200 shadow-lg bg-white/80 backdrop-blur-sm">
+          <CardContent className="p-8">
+            <div className="flex justify-between items-center mb-6 pb-4 border-b border-emerald-200">
+              <h2 className="text-3xl font-bold text-emerald-800">
                 Task Details
-              </h3>
-              <Link href="/" className="text-blue-600 hover:underline">
-                ← Back to Dashboard
+              </h2>
+              <Link href="/" className="text-emerald-600 hover:text-emerald-700 font-medium flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Back to Dashboard
               </Link>
             </div>
-          </div>
-          
-          <div className="px-4 py-5 sm:p-6">
-            <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-              <div className="sm:col-span-6">
+
+            <div className="space-y-6">
+              <div>
                 <label htmlFor="title" className="block text-sm font-medium text-gray-700">
                   Title
                 </label>
@@ -160,12 +174,12 @@ const TaskDetailPage = () => {
                     id="title"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md p-2 border"
+                    className="w-full p-3 border-2 border-emerald-200 bg-emerald-50 rounded-lg focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all shadow-sm"
                   />
                 </div>
               </div>
 
-              <div className="sm:col-span-6">
+              <div>
                 <label htmlFor="description" className="block text-sm font-medium text-gray-700">
                   Description
                 </label>
@@ -175,60 +189,75 @@ const TaskDetailPage = () => {
                     rows={4}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md p-2 border"
+                    className="w-full p-3 border-2 border-emerald-200 bg-emerald-50 rounded-lg focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all shadow-sm"
                   />
                 </div>
               </div>
 
-              <div className="sm:col-span-6">
-                <div className="flex items-center">
-                  <input
-                    id="completed"
-                    name="completed"
-                    type="checkbox"
-                    checked={task.completed}
-                    onChange={toggleCompletion}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
-                  <label htmlFor="completed" className="ml-2 block text-sm text-gray-900">
-                    Mark as completed
-                  </label>
+              <div>
+                <label htmlFor="priority" className="block text-sm font-medium text-gray-700">
+                  Priority
+                </label>
+                <div className="mt-1">
+                  <select
+                    id="priority"
+                    value={priority}
+                    onChange={(e) => setPriority(e.target.value as 'low' | 'medium' | 'high')}
+                    className="w-full p-3 border-2 border-emerald-200 bg-emerald-50 rounded-lg focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all shadow-sm"
+                  >
+                    <option value="low">🟢 Low Priority</option>
+                    <option value="medium">🟡 Medium Priority</option>
+                    <option value="high">🔴 High Priority</option>
+                  </select>
                 </div>
+              </div>
+
+              <div className="flex items-center">
+                <input
+                  id="completed"
+                  name="completed"
+                  type="checkbox"
+                  checked={task.completed}
+                  onChange={toggleCompletion}
+                  className="h-5 w-5 text-emerald-600 focus:ring-emerald-500 border-emerald-300 rounded"
+                />
+                <label htmlFor="completed" className="ml-3 block text-lg text-gray-900">
+                  Mark as completed
+                </label>
               </div>
             </div>
 
             <div className="mt-8 flex justify-between">
-              <div>
-                <button
-                  type="button"
-                  onClick={handleDelete}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                >
-                  Delete Task
-                </button>
-              </div>
-              <div>
-                <button
-                  type="button"
+              <Button
+                onClick={handleDelete}
+                className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all"
+              >
+                Delete Task
+              </Button>
+              <div className="space-x-3">
+                <Button
                   onClick={() => router.push('/')}
-                  className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 mr-3"
+                  className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all"
                 >
                   Cancel
-                </button>
-                <button
-                  type="button"
+                </Button>
+                <Button
                   onClick={handleSave}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className="bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all"
                 >
                   Save Changes
-                </button>
+                </Button>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
+          </CardContent>
+        </Card>
+      </main>
     </div>
   );
 };
 
-export default TaskDetailPage;
+export default function TaskDetailPage() {
+  return (
+    <TaskDetailPageContent />
+  );
+}

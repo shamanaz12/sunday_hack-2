@@ -35,4 +35,4 @@ temp/
 
 # Build outputs
 dist/
-build/
+build/"nul" 

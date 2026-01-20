@@ -1,34 +1,26 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { signOut, useSession } from '../../lib/auth';
 
 const UserMenu = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userName, setUserName] = useState('');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { data: session, isPending: isLoading } = useSession();
 
-  // Check if user is logged in (this would typically check for auth tokens)
-  useEffect(() => {
-    // In a real implementation, this would check for auth tokens in cookies/localStorage
-    const token = localStorage.getItem('auth-token');
-    if (token) {
-      setIsLoggedIn(true);
-      // In a real app, you might fetch user details here
-      setUserName(localStorage.getItem('user-name') || 'User');
-    }
-  }, []);
+  if (isLoading) {
+    return null; // Show loading state while checking session
+  }
 
-  const handleLogout = () => {
-    // In a real implementation, this would clear auth tokens
-    localStorage.removeItem('auth-token');
-    localStorage.removeItem('user-name');
-    setIsLoggedIn(false);
+  if (!session?.user) {
+    return null; // Don't show menu if user is not logged in
+  }
+
+  const handleLogout = async () => {
+    await signOut();
     window.location.href = '/login';
   };
 
-  if (!isLoggedIn) {
-    return null;
-  }
+  const userName = session.user.name || session.user.email?.split('@')[0] || 'User';
 
   return (
     <div className="relative">
@@ -50,7 +42,7 @@ const UserMenu = () => {
         <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl z-50 border border-gray-200">
           <div className="p-4 border-b border-gray-200">
             <p className="font-semibold text-gray-800">{userName}</p>
-            <p className="text-sm text-gray-600 truncate">{localStorage.getItem('user-email') || 'user@example.com'}</p>
+            <p className="text-sm text-gray-600 truncate">{session.user.email || 'user@example.com'}</p>
           </div>
           <div className="py-1">
             <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Profile</a>

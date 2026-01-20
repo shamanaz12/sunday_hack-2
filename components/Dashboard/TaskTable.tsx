@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Task } from '../../../types';
+import { Task } from '../../types';
 import TaskItem from '../UI/TaskItem';
 import ErrorDisplay from '../UI/ErrorDisplay';
 import LoadingSpinner from '../UI/LoadingSpinner';

@@ -1,43 +1,26 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useSession } from '../../lib/auth'; // Corrected path to match the location
 
 const Navigation = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userName, setUserName] = useState('');
+  const { data: session, isPending: isLoading } = useSession();
 
-  // Check if user is logged in (this would typically check for auth tokens)
-  useEffect(() => {
-    // In a real implementation, this would check for auth tokens in cookies/localStorage
-    const token = localStorage.getItem('auth-token');
-    if (token) {
-      setIsLoggedIn(true);
-      // In a real app, you might fetch user details here
-      setUserName(localStorage.getItem('user-name') || 'User');
-    }
-  }, []);
-
-  const handleLogout = () => {
-    // In a real implementation, this would clear auth tokens
-    localStorage.removeItem('auth-token');
-    localStorage.removeItem('user-name');
-    setIsLoggedIn(false);
-    window.location.href = '/login';
-  };
+  if (isLoading) {
+    // Show loading state while checking session
+    return (
+      <div className="flex items-center space-x-4">
+        <div className="px-4 py-2 rounded-lg text-white">Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center space-x-4">
-      {isLoggedIn ? (
+      {session?.user ? (
         <div className="flex space-x-3">
-          <Link href="/dashboard" className="px-3 py-2 rounded-lg text-white hover:bg-blue-500 transition-colors">
+          <Link href="/" className="px-3 py-2 rounded-lg text-white hover:bg-emerald-500 transition-colors">
             Dashboard
-          </Link>
-          <Link href="/tasks" className="px-3 py-2 rounded-lg text-white hover:bg-blue-500 transition-colors">
-            Tasks
-          </Link>
-          <Link href="/calendar" className="px-3 py-2 rounded-lg text-white hover:bg-blue-500 transition-colors">
-            Calendar
           </Link>
         </div>
       ) : (

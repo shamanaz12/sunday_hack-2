@@ -68,9 +68,9 @@ const TaskItem = ({ task, onToggle, onDelete }: TaskItemProps) => {
           )}
 
           <div className="mt-2 flex items-center text-xs text-gray-500">
-            <span>Created: {task.createdAt.toLocaleDateString()}</span>
+            <span>Created: {new Date(task.createdAt).toLocaleDateString()}</span>
             {task.completedAt && (
-              <span className="ml-3">Completed: {task.completedAt.toLocaleDateString()}</span>
+              <span className="ml-3">Completed: {new Date(task.completedAt).toLocaleDateString()}</span>
             )}
           </div>
         </div>
