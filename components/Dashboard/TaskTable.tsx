@@ -143,7 +143,7 @@ const TaskTable = ({ userId }: TaskTableProps) => {
   };
 
   if (loading) {
-    return <LoadingSpinner message="Loading your tasks..." />;
+    return <LoadingSpinner />;
   }
 
   if (error) {
