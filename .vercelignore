@@ -1,0 +1,24 @@
+# Python files (not needed for Next.js frontend)
+*.py
+__pycache__/
+*.db
+
+# Backend folders
+backend-new/
+taskflow-api/
+
+# Unnecessary folders
+.claude/
+.qwen/
+.specify/
+history/
+specs/
+Computers/
+tests/
+services/
+
+# Other unnecessary files
+*.bat
+nul
+QWEN.md
+requirements.txt
