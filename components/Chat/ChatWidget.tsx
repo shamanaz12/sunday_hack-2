@@ -40,7 +40,7 @@ export default function ChatWidget() {
     return id;
   };
 
-  const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000';
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
 
   const send = async () => {
     if (!input.trim() || loading) return;
@@ -50,7 +50,7 @@ export default function ChatWidget() {
     setInput('');
     setLoading(true);
     try {
-      const res = await fetch(`${apiBaseUrl}/chat`, {
+      const res = await fetch(`${apiBaseUrl}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
