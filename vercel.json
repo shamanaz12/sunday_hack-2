@@ -1,16 +1,12 @@
 {
   "version": 2,
+  "env": {
+    "NEXT_PUBLIC_API_URL": "https://taskflow-api-production-46a8.up.railway.app"
+  },
   "builds": [
     {
       "src": "package.json",
-      "use": "@vercel/next",
-      "config": {}
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/$1"
+      "use": "@vercel/next"
     }
   ]
 }
